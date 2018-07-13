@@ -14,47 +14,52 @@ public class ChatServer {
     private static int userCount = 0;
 
     public static void main(String[] args) {
-//        Javalin app = Javalin.start(PORT);
-//        app.get("/", ctx -> ctx.result("Hello World"));
+        Javalin app = Javalin.create();
+        app.port(PORT);
+        app.enableStaticFiles("/");
+        joinChat(app);
+    }
 
-        Javalin.create()
-                .port(PORT)
-                .enableStaticFiles("/")
+    /**
+     * Creates a websocket
+     * @param app
+     */
+    private static void joinChat(Javalin app) {
+        app
                 .ws("/chat", socket -> {
 
-                   socket.onConnect(session -> {
-                       // get username
-                       String username = "user" + ++userCount;
+                    socket.onConnect(session -> {
+                        // get username
+                        String username = "user" + ++userCount;
 
-                       // add to sessions
-                       users.put(session, username);
+                        // add to sessions
+                        users.put(session, username);
 
-                       // announce to chatroom
-                       broadcast("", (username + " has joined."));
-                   });
+                        // announce to chatroom
+                        broadcast("", (username + " has joined."));
+                    });
 
-                   socket.onClose((session, status, message) -> {
-                       // get username
-                      String username = users.get(session);
+                    socket.onClose((session, status, message) -> {
+                        // get username
+                        String username = users.get(session);
 
-                      // add to sessions
-                      users.remove(session);
+                        // add to sessions
+                        users.remove(session);
 
-                      // announce to chatroom
-                      broadcast("", (username + " has left."));
-                   });
+                        // announce to chatroom
+                        broadcast("", (username + " has left."));
+                    });
 
-                   socket.onMessage((session, message) -> {
-                       // get username
-                       String username = users.get(session);
+                    socket.onMessage((session, message) -> {
+                        // get username
+                        String username = users.get(session);
 
-                       // send to chatroom
-                       broadcast(username, message);
-                   });
+                        // send to chatroom
+                        broadcast(username, message);
+                    });
 
                 })
                 .start();
-
     }
 
     /**
